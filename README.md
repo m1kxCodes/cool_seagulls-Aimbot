@@ -202,6 +202,11 @@ end
 -- Input handling
 UIS.InputBegan:Connect(function(input, gameProcessedEvent)
     if not gameProcessedEvent then
+        if input.KeyCode == Enum.KeyCode.Insert then
+        guiVisible = not guiVisible -- Toggle the GUI visibility
+        frame.Visible = guiVisible
+        end
+        if guiVisible == false then return end
         if changingKeybind then
             if input.UserInputType == Enum.UserInputType.Keyboard then
                 aimbotKeybind = input.KeyCode
@@ -234,9 +239,6 @@ UIS.InputBegan:Connect(function(input, gameProcessedEvent)
                     bhopEnabled = not bhopEnabled
                 end
                 updateGui()
-            elseif input.KeyCode == Enum.KeyCode.Insert then
-                guiVisible = not guiVisible -- Toggle the GUI visibility
-                frame.Visible = guiVisible
             end
         end
     end

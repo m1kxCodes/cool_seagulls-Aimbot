@@ -13,8 +13,9 @@ local smoothAiming = true
 local smoothFactor = 0.1 -- Aiming speed factor (0.1 = very smooth)
 local triggerbotEnabled = false
 local isAimbotActive = false
+local bhopEnabled = false -- New Bhop option
 local selectedOption = 1 -- Current option in the GUI
-local options = { "Aimbot Keybind", "Prediction", "Body Part", "Smooth Aiming", "Triggerbot", "Target Priority" }
+local options = { "Aimbot Keybind", "Prediction", "Body Part", "Smooth Aiming", "Triggerbot", "Target Priority", "Bhop" }
 local bodyParts = { "Head", "Torso", "HumanoidRootPart" }
 local targetPriorities = { "Closest to Mouse", "Closest to Player", "Lowest Health", "Open Players" }
 local selectedBodyPart = 1 -- Current selected body part
@@ -28,7 +29,7 @@ screenGui.Name = "AimbotGui"
 screenGui.ResetOnSpawn = false
 
 local frame = Instance.new("Frame", screenGui)
-frame.Size = UDim2.new(0, 200, 0, 185)
+frame.Size = UDim2.new(0, 200, 0, 210)
 frame.Position = UDim2.new(0.2, 0, 0.3, -80)
 frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 
@@ -73,11 +74,29 @@ local function updateGui()
             label.TextColor3 = triggerbotEnabled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
         elseif i == 6 then
             label.Text = "Target Priority: " .. targetPriorities[selectedPriority]
+        elseif i == 7 then
+            label.Text = "Bhop: " .. (bhopEnabled and "On" or "Off")
+            label.TextColor3 = bhopEnabled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
         end
     end
 end
 
 updateGui()
+
+-- Bhop function
+local function bhop()
+    local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
+    local humanoidRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if bhopEnabled and humanoid and humanoidRootPart then
+        -- Check if the player is on the ground
+        if humanoid:GetState() == Enum.HumanoidStateType.Freefall or humanoid:GetState() == Enum.HumanoidStateType.Jumping then
+            -- Do not jump if the player is in the air
+            return
+        end
+        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end
+
 
 local function smoothAimAt(targetPosition)
     local aimDirection = (targetPosition - Camera.CFrame.Position).unit
@@ -169,10 +188,10 @@ local function findBestTarget()
     if selectedPriority == 4 and #openTargets > 0 then
         for _, target in pairs(openTargets) do
             local screenPoint = Camera:WorldToScreenPoint(target.Character.HumanoidRootPart.Position)
-            local distance = (Vector2.new(screenPoint.X, screenPoint.Y) - Vector2.new(mouse.X, mouse.Y)).magnitude
-            if distance < bestValue then
-                bestValue = distance
+            local distToMouse = (Vector2.new(screenPoint.X, screenPoint.Y) - Vector2.new(mouse.X, mouse.Y)).magnitude
+            if distToMouse < bestValue then
                 bestTarget = target
+                bestValue = distToMouse
             end
         end
     end
@@ -180,6 +199,7 @@ local function findBestTarget()
     return bestTarget
 end
 
+-- Input handling
 UIS.InputBegan:Connect(function(input, gameProcessedEvent)
     if not gameProcessedEvent then
         if changingKeybind then
@@ -210,6 +230,8 @@ UIS.InputBegan:Connect(function(input, gameProcessedEvent)
                     triggerbotEnabled = not triggerbotEnabled
                 elseif selectedOption == 6 then
                     selectedPriority = (selectedPriority % #targetPriorities) + 1
+                elseif selectedOption == 7 then
+                    bhopEnabled = not bhopEnabled
                 end
                 updateGui()
             elseif input.KeyCode == Enum.KeyCode.Insert then
@@ -235,6 +257,8 @@ RunService.RenderStepped:Connect(function()
     if triggerbotEnabled then
         triggerbot()
     end
+
+    bhop()
 end)
 
 print("executed cool-seagull aimbot succesfully")
